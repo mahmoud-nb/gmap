@@ -10,7 +10,8 @@ var GMAP = {
 		defaultOptions: {center: { lat: 25.046801, lng: 55.181436 }, zoom: 9},
 	    iconUserPos: 'images/markers/red-marker.png',
 	    showInfoWindow: true,
-	    enableBounds: false
+	    enableBounds: false,
+        enableGeocoder: true
 	    //enableDirectionsService: true
 	},
 	mapOptions: {
@@ -27,10 +28,16 @@ var GMAP = {
 	    //icon: 'images/marker_car.png',
 	},
 	markers: [],
+
+    tmp: {
+        markers: []
+    },
+
 	//bounds: google && google.maps ? new google.maps.LatLngBounds() : null, // TODO
 	currentInfoWindow: null,
 	directionsDisplay: null, // google && google.maps ? new google.maps.DirectionsRenderer() : null, // TODO
 	directionsService: null, // google && google.maps ? new google.maps.DirectionsService() : null, // TODO
+    geocoder: null,
 	
 	currentPosition: {
 	    defaultLat: 25.046801,		// Latitude
@@ -62,22 +69,38 @@ var GMAP = {
 		} catch (e) {
 		    console.log("unable to load map", e, this);
 		}
+
+        try {
+
+            if(this.config.enableGeocoder)
+                this.geocoder = new google.maps.Geocoder();
+
+        }catch (e) {
+            console.log( 'Geocoder exception' , e );
+        }
 		
 		try {
-				/*
+			
+            /*
 		    if(this.config.enableDirectionsService){
 		    	this.directionsService = new google.maps.DirectionsService();
 		        this.directionsDisplay = new google.maps.DirectionsRenderer();
 		        this.directionsDisplay.setMap(this.map);
 		    }
 			*/
-					
-		    if(this.config.enableBounds)
-		        this.bounds = new google.maps.LatLngBounds();
 		    
 		}catch (e) {
-			console.log( 'exception' , e );
+			console.log( 'Directions exception' , e );
 		}
+
+        try {
+                    
+            if(this.config.enableBounds)
+                this.bounds = new google.maps.LatLngBounds();
+            
+        }catch (e) {
+            console.log( 'Bounds exception' , e );
+        }
 		
 		return this;
 	},
@@ -98,38 +121,90 @@ var GMAP = {
         return this;
     },
 
+    getFullAddress: function(store){
+        return store.Adresse+' '+ store.Ville+' '+store.Code_Postal ;
+    },
+
+    getLatLngFromAddress: function(marker){
+
+        address = this.getFullAddress(marker);
+
+        this.geocoder.geocode({'address': address}, function(results, status) {
+            if (status === google.maps.GeocoderStatus.OK) {
+               // console.log('########## location', results[0].geometry.location);
+
+                /*
+                GMAP.tmp = {
+                    'latitude' : results[0].geometry.location.lat(),
+                    'longitude' : results[0].geometry.location.lng()
+                };
+                */
+
+                marker.latitude = results[0].geometry.location.lat();
+                marker.longitude = results[0].geometry.location.lng();
+
+                GMAP.tmp.markers.push(marker);
+
+                //return false ;
+                /*
+              resultsMap.setCenter(results[0].geometry.location);
+              var marker = new google.maps.Marker({
+                map: resultsMap,
+                position: results[0].geometry.location
+              });
+              */
+            } else {
+              //alert('Geocode of['+ address +'] was not successful for the following reason: ' + status);
+
+                marker.latitude = 0;
+                marker.longitude = 0;
+
+                GMAP.tmp.markers.push(marker);
+
+              
+            }
+          });
+    },
+
     /**
 	 * add marker
 	 * @params options : object{ title, content, latitude, longitude ... }
 	 */
     addMarker: function (options) {
-    	console.log("addMarker", options);
-        var self = this;
-        $.extend(this.markerOptions, options);
+    	//console.log("addMarker", options);
+        if(options){
+            var self = this;
+            $.extend(this.markerOptions, options);
 
-        this.markerOptions.map = this.map;
-        this.markerOptions.position = new google.maps.LatLng(options.latitude, options.longitude);
+            this.markerOptions.map = this.map;
 
-        marker = new google.maps.Marker(this.markerOptions);
+            if(typeof options.latitude != "undefined" && typeof options.longitude != "undefined"){
 
-        this.markers.push(marker);
+                this.markerOptions.position = new google.maps.LatLng(options.latitude, options.longitude);
 
-        //google.maps.event.addListener(marker, 'click', self.showMarkerInfo( options ));
-        
-        if (this.config.showInfoWindow && typeof options.content != "undefined") {
-			console.log('ADD INFO', this.config.showInfoWindow);
-            content = options.title != '' ? '<h3>' + options.title + '</h3>' : '';
-            content += options.content != '' ? '<div>' + options.content + '</div>' : '';
-     
-            infoWindow = new google.maps.InfoWindow({ content: content });
-            this.currentInfoWindow = infoWindow ;
-            google.maps.event.addListener(marker, 'click', self.openInfoWindow(infoWindow, marker));
-            //google.maps.event.addListener( infoWindow,'closeclick', self.closeInfoWindow(infoWindow));
-        }
+                marker = new google.maps.Marker(this.markerOptions);
 
-        if (this.config.enableBounds){
-            this.bounds.extend(marker.position);
-            this.map.fitBounds(this.bounds);
+                this.markers.push(marker);
+
+                //google.maps.event.addListener(marker, 'click', self.showMarkerInfo( options ));
+                
+                if (this.config.showInfoWindow && typeof options.Ville != "undefined") {
+        			//console.log('ADD INFO', this.config.showInfoWindow);
+                    content = options.CT_Intitule != '' ? '<h3>' + options.CT_Intitule + '</h3>' : '';
+                    content += options.Ville != '' || options.Adresse ? '<div>' + options.Adresse +' '+ options.Ville + '</div>' : '';
+             
+                    infoWindow = new google.maps.InfoWindow({ content: content });
+                    this.currentInfoWindow = infoWindow ;
+                    google.maps.event.addListener(marker, 'click', self.openInfoWindow(infoWindow, marker));
+                    google.maps.event.addListener( infoWindow,'closeclick', self.closeInfoWindow(infoWindow));
+                }
+
+                if (this.config.enableBounds){
+                    this.bounds.extend(marker.position);
+                    this.map.fitBounds(this.bounds);
+                }
+
+            }
         }
 
         return this;
@@ -227,6 +302,40 @@ var GMAP = {
                     marker.setVisible(false);
                 }
             }
+    },
+
+    findStoreBy : function (city, concessions) { 
+            city = city.toLowerCase();
+            concessions = concessions.toLowerCase();
+
+            filterBounds = new google.maps.LatLngBounds();
+        
+            //for (i = 0; i < this.markers.length; i++) {
+            for (i in this.markers) {
+                marker = this.markers[i];
+
+                showMarker = false;
+
+                ville = marker.Ville.toLowerCase();
+                intitule = marker.CT_Intitule.toLowerCase();
+                
+                if(city != '' && concessions != ''){
+                    if ( ville == city && intitule == concessions ){ showMarker = true; }
+                }else if(city != ''){
+                    if ( ville == city ){ showMarker = true;  }
+                }else if(concessions != ''){
+                    if ( intitule == concessions ){ showMarker = true; }
+                }
+
+                if(showMarker){
+                    filterBounds.extend(marker.position);
+                }
+
+                marker.setVisible(showMarker);
+            }
+
+            if(!filterBounds.isEmpty())
+                this.map.fitBounds(filterBounds);
     },
 
     /**
@@ -469,7 +578,7 @@ var GMAP = {
         
         navigator.geolocation.getCurrentPosition(
 			function (position) {
-				console.log('____getCurrentPosition DONE', position);
+				//console.log('____getCurrentPosition DONE', position);
 			    GMAP.userLatitude = position.coords.latitude;
 			    GMAP.userLongitude = position.coords.longitude;
 			    GMAP.userPos = new google.maps.LatLng(GMAP.userLatitude, GMAP.userLongitude);
