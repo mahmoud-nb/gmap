@@ -133,35 +133,17 @@ var GMAP = {
             if (status === google.maps.GeocoderStatus.OK) {
                // console.log('########## location', results[0].geometry.location);
 
-                /*
-                GMAP.tmp = {
-                    'latitude' : results[0].geometry.location.lat(),
-                    'longitude' : results[0].geometry.location.lng()
-                };
-                */
-
                 marker.latitude = results[0].geometry.location.lat();
                 marker.longitude = results[0].geometry.location.lng();
 
                 GMAP.tmp.markers.push(marker);
 
-                //return false ;
-                /*
-              resultsMap.setCenter(results[0].geometry.location);
-              var marker = new google.maps.Marker({
-                map: resultsMap,
-                position: results[0].geometry.location
-              });
-              */
             } else {
-              //alert('Geocode of['+ address +'] was not successful for the following reason: ' + status);
 
-                marker.latitude = 0;
-                marker.longitude = 0;
+                marker.latitude = '';
+                marker.longitude = '';
 
                 GMAP.tmp.markers.push(marker);
-
-              
             }
           });
     },
