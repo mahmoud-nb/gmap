@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Template</title>
+
+
+    <!-- Custom CSS -->
+    <link href="css/_form.css" rel="stylesheet">
+
+    <link href="css/style.css" rel="stylesheet">
+
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&language=ar"></script>
+    <!-- <script src="js/gmap.js"></script> -->
+	
+	
+	<script>
+		var GMAP = {
+			var stores : [], // JSON array of all markers
+			tmp: { markers: []},
+			init: function(markers){
+				this.stores = markers;
+				this.geocoder = new google.maps.Geocoder();
+				return this;
+			},
+			getFullAddress: function(store){return store.Adresse+' '+ store.Ville+' '+store.Code_Postal ;},
+			getLatLngFromAddress: function(marker){
+
+				address = this.getFullAddress(marker);
+
+				this.geocoder.geocode({'address': address}, function(results, status) {
+					if (status === google.maps.GeocoderStatus.OK) {
+						// console.log('########## location', results[0].geometry.location);
+						marker.latitude = results[0].geometry.location.lat();
+						marker.longitude = results[0].geometry.location.lng();
+						GMAP.tmp.markers.push(marker);
+					} else {
+						// if address not found
+						marker.latitude = ''; marker.longitude = '';
+						GMAP.tmp.markers.push(marker);
+					}
+				});
+			},
+			
+			migration: function(){
+				var k = 0;
+				var rr = setInterval(function(){
+
+					if(k < this.stores.length){
+
+						store = this.stores[k];
+						GMAP.getLatLngFromAddress(store);
+						
+						console.log('i.', k);
+						//res = res.concat(GMAP.tmp.markers);
+					}else{
+						clearInterval(rr); console.log('STOP', e, GMAP.tmp.markers.length + ' markers');
+					}
+					k++;
+				}, 2000);
+			},
+		} ;
+		
+		// ############################################# //
+		var markers = [] ;
+		
+		GMAP.init(markers).migration();
+
+
+		// Next Step (After response in console browser) run this line
+		// storesStr = GMAP.tmp.markers.stringify(); console.log(storesStr);
+		
+		// Next ## passer la résultat sur "http://pro.jsonlint.com/" pour récupérer le nouveau JSON avec lat - lng
+		
+
+		
+		
+	</script>
+	
+	
+
+	
+ 
+
+</head>
+
+<body>
+
+    
+
+</body>
+
+</html>

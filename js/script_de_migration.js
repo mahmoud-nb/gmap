@@ -2,7 +2,7 @@
 // Or copy the flowing object in your console browser
 
 // SMall GMAP Service...
-GMAP = {
+var GMAP = {
     tmp: { markers: []},
 	init: function(){
 		this.geocoder = new google.maps.Geocoder();
@@ -25,7 +25,7 @@ GMAP = {
             }
 		});
     },
-} 
+} ;
 
 // Step 2 ## stores is a JSON of all markers
 var stores = []; // JSON array of all markers 
@@ -54,9 +54,24 @@ stores = GMAP.tmp.markers;
 // Step 5
 storesStr = GMAP.tmp.markers.stringify();
 
-// Step 6 ## la résultat sur "http://pro.jsonlint.com/" pour récupérer le nouveau JSON avec lat - lng
+// Step 6 ## passer la résultat sur "http://pro.jsonlint.com/" pour récupérer le nouveau JSON avec lat - lng
 
 // SMall GMAP Service...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
