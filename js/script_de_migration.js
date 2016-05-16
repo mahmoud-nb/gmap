@@ -1,22 +1,12 @@
-/*
-var res = []; var e = 10; var s = 0; var k = 0;
-var rr = setInterval(function(){
-	if(stores.length >= e){
-		tmpStores = stores.slice(s, e);console.log('>>>>', s, e,'length of tmpStores', tmpStores.length);
-		s += tmpStores.length;e += tmpStores.length;
-		for(i in tmpStores){store = tmpStores[i]GMAP.getLatLngFromAddress(store)}
-		console.log('i.', k, GMAP.tmp.markers);
-		res = res.concat(GMAP.tmp.markers);
-	}else{clearInterval(rr); console.log('STOP', e, res.length);}
-	k++; }, 5000);
-*/
-
-// Step 1 ## load gmap.js in your browser
+// Step 1 ## load google map and gmap.js in your browser // <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true&libraries=drawing"></script>
 // Or copy the flowing object in your console browser
 
 // SMall GMAP Service...
 GMAP = {
     tmp: { markers: []},
+	init: function(){
+		this.geocoder = new google.maps.Geocoder();
+	},
 	getFullAddress: function(store){return store.Adresse+' '+ store.Ville+' '+store.Code_Postal ;},
     getLatLngFromAddress: function(marker){
 
@@ -39,8 +29,10 @@ GMAP = {
 
 // Step 2 ## stores is a JSON of all markers
 var stores = []; // JSON array of all markers 
+
 // Step 3 ## copy and run this flowing code in your console
 var k = 0;
+GMAP.init();
 var rr = setInterval(function(){
 
 	if(k < stores.length){
@@ -65,4 +57,20 @@ storesStr = GMAP.tmp.markers.stringify();
 // Step 6 ## la résultat sur "http://pro.jsonlint.com/" pour récupérer le nouveau JSON avec lat - lng
 
 // SMall GMAP Service...
+
+
+
+
+/*
+var res = []; var e = 10; var s = 0; var k = 0;
+var rr = setInterval(function(){
+	if(stores.length >= e){
+		tmpStores = stores.slice(s, e);console.log('>>>>', s, e,'length of tmpStores', tmpStores.length);
+		s += tmpStores.length;e += tmpStores.length;
+		for(i in tmpStores){store = tmpStores[i]GMAP.getLatLngFromAddress(store)}
+		console.log('i.', k, GMAP.tmp.markers);
+		res = res.concat(GMAP.tmp.markers);
+	}else{clearInterval(rr); console.log('STOP', e, res.length);}
+	k++; }, 5000);
+*/
 
