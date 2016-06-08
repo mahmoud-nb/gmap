@@ -16,82 +16,96 @@
 
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&language=ar"></script>
     <!-- <script src="js/gmap.js"></script> -->
+    <!-- // <script src="js/entreprises.js"></script> -->
+    <script src="js/stores.js"></script>
 	
 	
 	<script>
 		var GMAP = {
-			var stores : [], // JSON array of all markers
+			stores : [], // JSON array of all markers
 			tmp: { markers: []},
 			init: function(markers){
 				this.stores = markers;
 				this.geocoder = new google.maps.Geocoder();
 				return this;
 			},
-			getFullAddress: function(store){return store.Adresse+' '+ store.Ville+' '+store.Code_Postal ;},
-			getLatLngFromAddress: function(marker){
 
-				address = this.getFullAddress(marker);
+			getFullAddress: function(store){
+				return store.adresse+' '+ store.ville+' '+ store.region +' '+store.code_postal+' Tunisie';
+			},
+// google.maps.GeocoderStatus.ZERO_RESULTS
+// google.maps.GeocoderStatus.OK
 
-				this.geocoder.geocode({'address': address}, function(results, status) {
-					if (status === google.maps.GeocoderStatus.OK) {
-						// console.log('########## location', results[0].geometry.location);
-						marker.latitude = results[0].geometry.location.lat();
-						marker.longitude = results[0].geometry.location.lng();
-						GMAP.tmp.markers.push(marker);
-					} else {
-						// if address not found
-						marker.latitude = ''; marker.longitude = '';
-						GMAP.tmp.markers.push(marker);
-					}
-				});
+			getLatLngFromAddress: function(marker, k){
+
+				if(marker.lat == '' || marker.lang == ''){
+					
+					address = this.getFullAddress(marker);
+					this.geocoder.geocode({'address': address}, function(results, status) {
+						console.log('################', k, 'status = [', status, '] ### for', address);
+						
+						if (status === google.maps.GeocoderStatus.OK) {
+							
+							if(typeof results[0] != 'undefined'){
+								console.log('#### YES');
+								marker.lat = results[0].geometry.location.lat();
+								marker.lang = results[0].geometry.location.lng();
+								GMAP.tmp.markers.push(marker);
+							}
+
+						} else if(status === google.maps.GeocoderStatus.ZERO_RESULTS) {
+							// if address not found
+							console.log('#### Sorry location not found width status ZERO_RESULTS');
+							marker.lat = ''; marker.lang = '';
+							GMAP.tmp.markers.push(marker);
+						}else{
+							console.log('#### Exception location not found : ', status);
+							marker.lat = ''; marker.lang = '';
+							GMAP.tmp.markers.push(marker);
+						}
+
+					});
+				}else{
+					console.log('j.', k);
+					GMAP.tmp.markers.push(marker);
+				}
 			},
 			
 			migration: function(){
 				var k = 0;
+				var stores = this.stores;
 				var rr = setInterval(function(){
 
-					if(k < this.stores.length){
+					if(k < stores.length){
 
-						store = this.stores[k];
-						GMAP.getLatLngFromAddress(store);
-						
-						console.log('i.', k);
+						store = stores[k];
+						GMAP.getLatLngFromAddress(store, k);//console.log('i.', k);
+
 						//res = res.concat(GMAP.tmp.markers);
 					}else{
-						clearInterval(rr); console.log('STOP', e, GMAP.tmp.markers.length + ' markers');
+						clearInterval(rr); console.log('STOP', GMAP.tmp.markers.length + ' markers');
 					}
 					k++;
-				}, 2000);
+				}, 300);
 			},
 		} ;
 		
 		// ############################################# //
-		var markers = [] ;
+		//var markers = entreprises ;
+		var markers = stores ;
 		
-		GMAP.init(markers).migration();
+		GMAP.init(markers);
+		
+		//GMAP.migration();
 
-
-		// Next Step (After response in console browser) run this line
-		// storesStr = GMAP.tmp.markers.stringify(); console.log(storesStr);
-		
-		// Next ## passer la résultat sur "http://pro.jsonlint.com/" pour récupérer le nouveau JSON avec lat - lng
-		
-
-		
-		
+		// Next Step (After response in console browser) 
+		// console.log(GMAP.tmp.markers);
+		// Right-click the object and select "Store as global variable"
+		// The console will print the new variable's name, for example: temp1
+		// copy(temp1)
+		// The object is now available in your clipboard.
 	</script>
-	
-	
-
-	
- 
-
 </head>
-
 <body>
-
-    
-
 </body>
-
 </html>
