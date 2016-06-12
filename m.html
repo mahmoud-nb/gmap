@@ -16,14 +16,14 @@
 
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&language=ar"></script>
     <!-- <script src="js/gmap.js"></script> -->
-    <!-- // <script src="js/entreprises.js"></script> -->
-    <script src="js/stores.js"></script>
+    <!-- // <script src="js/_entreprises.js"></script> -->
+    <script src="js/_stores.js"></script>
 	
 	
 	<script>
 		var GMAP = {
 			stores : [], // JSON array of all markers
-			tmp: { markers: []},
+			tmp: { markers: [], new_markers: [], new_location: 0},
 			init: function(markers){
 				this.stores = markers;
 				this.geocoder = new google.maps.Geocoder();
@@ -31,26 +31,33 @@
 			},
 
 			getFullAddress: function(store){
-				return store.adresse+' '+ store.ville+' '+ store.region +' '+store.code_postal+' Tunisie';
+				adr = store.adresse 
+				//adr += ' '+ store.ville 
+				//adr += ' '+ store.region 
+				//adr += ' '+store.code_postal 
+				adr += ' Tunisie';
+				return adr;
 			},
 // google.maps.GeocoderStatus.ZERO_RESULTS
 // google.maps.GeocoderStatus.OK
 
-			getLatLngFromAddress: function(marker, k){
+			getLatLngFromAddress: function(marker){
 
-				if(marker.lat == '' || marker.lang == ''){
+		
 					
 					address = this.getFullAddress(marker);
 					this.geocoder.geocode({'address': address}, function(results, status) {
-						console.log('################', k, 'status = [', status, '] ### for', address);
-						
+						//console.log('########', k, 'status = [', status, '] ### for', address);
 						if (status === google.maps.GeocoderStatus.OK) {
 							
 							if(typeof results[0] != 'undefined'){
-								console.log('#### YES');
+								console.log('#### OK');
 								marker.lat = results[0].geometry.location.lat();
 								marker.lang = results[0].geometry.location.lng();
 								GMAP.tmp.markers.push(marker);
+								
+								GMAP.tmp.markers.new_location ++;
+								GMAP.tmp.new_markers.push(marker);
 							}
 
 						} else if(status === google.maps.GeocoderStatus.ZERO_RESULTS) {
@@ -65,10 +72,7 @@
 						}
 
 					});
-				}else{
-					console.log('j.', k);
-					GMAP.tmp.markers.push(marker);
-				}
+				
 			},
 			
 			migration: function(){
@@ -79,14 +83,20 @@
 					if(k < stores.length){
 
 						store = stores[k];
-						GMAP.getLatLngFromAddress(store, k);//console.log('i.', k);
+						if(store.lat != '' && store.lang != ''){
+							console.log('j.', k);
+							GMAP.tmp.markers.push(store);
+						}else{
+							console.log('i.', k);
+							GMAP.getLatLngFromAddress(store);
+						}
 
 						//res = res.concat(GMAP.tmp.markers);
 					}else{
 						clearInterval(rr); console.log('STOP', GMAP.tmp.markers.length + ' markers');
 					}
 					k++;
-				}, 300);
+				}, 1800);
 			},
 		} ;
 		
