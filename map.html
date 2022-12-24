@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Google Map</title>
+	
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn5tHFPm8dyUnUli3q11N9W9Blq-0qgI8&callback=initMap" async defer></script>
+	
+	<style>
+	#map { width:100%; height: 300px;	}
+	</style>
+	
+</head>
+<body>
+	<div id="map"></div>
+	
+	
+	<script type="text/javascript">
+		function initMap() {
+		  // Créez une carte en utilisant les coordonnées GPS (latitude et longitude) de votre emplacement souhaité
+		  var myLatLng = {lat: -25.363, lng: 131.044};
+
+		  // Créez une nouvelle instance de la carte en utilisant l'élément div et les coordonnées ci-dessus
+		  var map = new google.maps.Map(document.getElementById('map'), {
+			zoom: 4,
+			center: myLatLng
+		  });
+
+		  // Ajoutez un marqueur à la carte à l'emplacement souhaité
+		  var marker = new google.maps.Marker({
+			position: myLatLng,
+			map: map,
+			title: 'Hello World!'
+		  });
+		}
+		
+		function getCoordinates(address, callback) {
+		  var geocoder = new google.maps.Geocoder();
+		  geocoder.geocode({'address': address}, function(results, status) {
+			if (status === 'OK') {
+			  callback(results[0].geometry.location);
+			} else {
+			  console.error('Geocode was not successful for the following reason: ' + status);
+			}
+		  });
+		}
+		
+		function getDirections(origin, destination, callback) {
+		  var directionsService = new google.maps.DirectionsService();
+		  directionsService.route({
+			origin: origin,
+			destination: destination,
+			travelMode: 'DRIVING'
+		  }, function(response, status) {
+			if (status === 'OK') {
+			  callback(response);
+			} else {
+			  console.error('Directions request failed due to ' + status);
+			}
+		  });
+		}
+		
+		function getMidpoint(point1, point2) {
+		  var lat = (point1.lat() + point2.lat()) / 2;
+		  var lng = (point1.lng() + point2.lng()) / 2;
+		  return new google.maps.LatLng(lat, lng);
+		}
+		
+		
+		/*
+		Vous pouvez également utiliser la méthode interpolate() de la classe geometry.spherical de l'API pour calculer le milieu entre deux points en utilisant une projection sur une sphère, ce qui est plus précis que le calcul de la moyenne simple des coordonnées GPS :
+
+		var midpoint = google.maps.geometry.spherical.interpolate(point1, point2, 0.5);
+https://developers.google.com/maps/documentation/javascript/geometry#Interpolation
+
+		*/
+
+
+	</script>
+</body>
+</html>

@@ -35,11 +35,6 @@
     <link rel="stylesheet" href="highlight/styles/monokai.css" />
 
 
-
-    <!-- <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&language=ar"></script> -->
-         <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true&language=ar&libraries=drawing"></script>
-
-
     <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="js/gmap.js"></script>
 
@@ -298,33 +293,56 @@
                         </div>
                         <div id="collapse4" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading4">
                           <div class="panel-body">
-            								<div class="formField">
-            									<label for="originLat">originLat</label>
-            									<div class="formControl">
-            										<input type="text" name="originLat" id="originLat" value="25.110522" />
-            									</div>
-            								</div>
-            								<div class="formField">
-            									<label for="originLng">originLng</label>
-            									<div class="formControl">
-            										<input type="text" name="originLng" id="originLng" value="55.140773" />
-            									</div>
-            								</div>
-            								<div class="formField">
-            									<label for="destinationLat">destinationLat</label>
-            									<div class="formControl">
-            										<input type="text" name="destinationLat" id="destinationLat" value="25.204893" />
-            									</div>
-            								</div>
-            								<div class="formField">
-            									<label for="destinationLng">destinationLng</label>
-            									<div class="formControl">
-            										<input type="text" name="destinationLng" id="destinationLng" value="55.270663" />
-            									</div>
-            								</div>
-            								<div class="actionsRow labelMargin">
-            									<input type="button" name="traceDirection" id="traceDirection" class="btn blueBtn" value="Trace Direction"  />
-            								</div>
+								<div class="formField">
+									<label for="originLat">originLat</label>
+									<div class="formControl">
+										<input type="text" name="originLat" id="originLat" value="25.110522" />
+									</div>
+								</div>
+								<div class="formField">
+									<label for="originLng">originLng</label>
+									<div class="formControl">
+										<input type="text" name="originLng" id="originLng" value="55.140773" />
+									</div>
+								</div>
+								<div class="formField">
+									<label for="destinationLat">destinationLat</label>
+									<div class="formControl">
+										<input type="text" name="destinationLat" id="destinationLat" value="25.204893" />
+									</div>
+								</div>
+								<div class="formField">
+									<label for="destinationLng">destinationLng</label>
+									<div class="formControl">
+										<input type="text" name="destinationLng" id="destinationLng" value="55.270663" />
+									</div>
+								</div>
+								<div class="formField">
+									<label for="destinationLng">TRAVEL MODES</label>
+									<div class="formControl">
+									<div class="btn-group" data-toggle="buttons">
+									  <label class="btn btn-primary active">
+										<input type="radio" name="travelMode" value="DRIVING" checked >
+										 DRIVING
+									  </label>
+									  <label class="btn btn-primary">
+										<input type="radio" name="travelMode" value="TRANSIT" > 
+										TRANSIT
+									  </label>
+									  <label class="btn btn-primary">
+										<input type="radio" name="travelMode" value="WALKING" > 
+										WALKING
+									  </label>
+									</div>
+								  </div>
+								</div>
+
+								<div class="actionsRow labelMargin">
+									<input type="button" name="traceDirection" id="traceDirection" class="btn blueBtn" value="Trace Direction"  />
+								</div>
+								<div class="actionsRow labelMargin">
+									<input type="button" name="getCenter" id="getCenter" class="btn blueBtn" value="Trouver le centre du trajet"  />
+								</div>
                           </div>
                         </div>
                       </div>
@@ -498,7 +516,7 @@ GMAP.addMarkers(markers);
 <!-- ### searchCode ### -->
 <pre id="searchCode" class="codeItem"><code class="javascript">var searchBy = 'title';
 var searchVal = 'value';
-GMAP.findBy(searchBy, searchVal);
+GMAP.findMarkersBy(searchBy, searchVal);
 </code></pre>
 
 <!-- ### traceDirection ### -->
@@ -618,6 +636,7 @@ define([ "jquery" ], function( $ ) {
 
     <script type="text/javascript">
 
+		GMAP.load();
         //GMAP.init();
 		
 		// ## Init MAP ###########################################################
@@ -627,7 +646,7 @@ define([ "jquery" ], function( $ ) {
 			showInfoWindow : true,
 			enableBounds : false,
 			enableDirectionsService : false,
-      showUserMarker: true
+			showUserMarker: true
 		};
 		
 		$("input[name=showInfoWindow]:radio").change(function () {
@@ -638,6 +657,10 @@ define([ "jquery" ], function( $ ) {
 		});
 		$("input[name=enableDirectionsService]:radio").change(function () {
 			config.enableDirectionsService = $(this).val() == 1 ? true : false;
+		});
+		let travelMode = $("input[name=travelMode]:radio").val()
+		$("input[name=travelMode]:radio").change(function (event) {
+			travelMode = event.currentTarget.value
 		});
 		
 		$('#initMapBtn').on('click', function(){
@@ -699,9 +722,10 @@ define([ "jquery" ], function( $ ) {
       //showCode('#searchCode');
 			var searchBy = $('#searchBy').val();
 			var searchVal = $('#searchVal').val();
-      GMAP.findBy(searchBy, searchVal);
+      GMAP.findMarkersBy(searchBy, searchVal);
 		});
 		// ## trace Direction ##################################################
+		let steps = []
 		$('#traceDirection').on('click', function(){
       //showCode('#traceDirectionCode');
 
@@ -714,15 +738,38 @@ define([ "jquery" ], function( $ ) {
 				'originLat':originLat,
 				'originLng':originLng,
 				'destinationLat':destinationLat,
-				'destinationLng':destinationLng
+				'destinationLng':destinationLng,
+				'travelMode': travelMode,
 			};
 			
 			GMAP.traceDirectionDeferred(options).done(function(response){
 				console.log("trace Direction :: DONE", response);
+				steps = response.routes[0].legs[0].steps
+				
 			}).fail(function(response){
 				console.log("trace Direction :: DONE", response);
 			});
 		});
+		
+		$('#getCenter').on('click', function(){
+			var originLat = $('#originLat').val();
+			var originLng = $('#originLng').val();
+			var destinationLat = $('#destinationLat').val();
+			var destinationLng = $('#destinationLng').val();
+			
+			var point1 = new google.maps.LatLng(originLat, originLng);
+			var point2 = new google.maps.LatLng(destinationLat, destinationLng);
+
+			const midPoint = GMAP.getMidDirection(steps)
+
+			const marker = {
+				"title": 'midPoint',
+				"latitude": midPoint.lat(), 
+				"longitude": midPoint.lng(),
+			};
+			GMAP.addMarker(marker);
+		})
+		
     // ###################################################################### 
     $('#getDistance').on('click', function(){
       //showCode('#getDistanceCode');

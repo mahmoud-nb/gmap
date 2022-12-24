@@ -1,14 +1,26 @@
 ﻿/**
  * GMAP : plugin javascript pour utiliser Google Maps version 3
  * @autor : Mahmoud NBET
- * @email : mahmoud.nbet@proxym-
+ * @email : mahmoud.nb@gmail.com
  */
+ 
+const defaultOptions = {
+	center: { lat: 25.046801, lng: 55.181436 }, 
+	zoom: 9,
+	//minZoom: 9,
+	//disableDefaultUI: false,
+	//zoomControl: true,
+	//zoomControlOptions: {style: google.maps.ZoomControlStyle.SMALL},
+};
+const RED_MARKER = 'images/markers/red-marker.png';
 
-var GMAP = {
-	map: null,
+const TRAVEL_MODES = ['DRIVING', 'BICYCLING', 'TRANSIT', 'WALKING'];
+const MAP_TYPES = ['roadmap', 'terrain'];
+
+const GMAP = {
 	config: {
-		defaultOptions: {center: { lat: 25.046801, lng: 55.181436 }, zoom: 9},
-	    iconUserPos: 'images/markers/red-marker.png',
+		...defaultOptions,
+	    iconUserPos: RED_MARKER,
 	    showInfoWindow: true,
 	    enableBounds: false,
         enableGeocoder: true
@@ -18,15 +30,12 @@ var GMAP = {
 	    center: { lat: 25.046801, lng: 55.181436 },
 	    mapTypeControl: false,
 	    mapTypeId: "roadmap", // "roadmap" || "terrain"
-	    //disableDefaultUI: false,
-	    //zoomControl: true,
-	    //zoomControlOptions: {style: google.maps.ZoomControlStyle.SMALL},
 	    zoom: 7
-	    //minZoom: 9
 	},
 	markerOptions: {
 	    //icon: 'images/marker_car.png',
 	},
+	map: null,
 	markers: [],
 
     tmp: {
@@ -44,32 +53,38 @@ var GMAP = {
 	    defaultLng: 55.181436,		// Longitude
 	},
 	
+	load: async function() {
+		if(typeof google == "undefined")
+			await _loadScriptAndreInit()
+	},
+	
 	/**
 	 * Map initialization
 	 * @param mapContainer : dom
 	 * @param options : init options
 	 */
-	init: function(mapContainer, options, config) {
-		try {
-            mapContainer = typeof mapContainer != "undefined" ? mapContainer : document.getElementById('mapContainer');
-            if(typeof config != "undefined") $.extend(this.config, config);
-			if(typeof options != "undefined") $.extend(this.mapOptions, options);
+	init: function(mapContainer, options = {}, config = {}) {
+		
+        mapContainer = typeof mapContainer != "undefined" ? mapContainer : document.getElementById('mapContainer');
 			
-		    // TODO if(!google){ loadScriptAndreInit(mapContainer, options, config) }
+		this.config = {
+			...this.config,
+			...config,
+		};
+		
+		this.mapOptions = {
+			...this.mapOptions,
+			...options,
+		};
 			
-			if(_checkNested(options, 'center', 'lat') && _checkNested(options, 'center', 'lng'))
-				this.mapOptions.center = new google.maps.LatLng(this.mapOptions.center.lat, this.mapOptions.center.lng);
-			
-			if(this.mapOptions.zoom)
-				this.mapOptions.zoom = parseInt(this.mapOptions.zoom);
+		if(_checkNested(options, 'center', 'lat') && _checkNested(options, 'center', 'lng'))
+			this.mapOptions.center = new google.maps.LatLng(this.mapOptions.center.lat, this.mapOptions.center.lng);
+		
+		if(this.mapOptions.zoom)
+			this.mapOptions.zoom = parseInt(this.mapOptions.zoom);
 
-		    this.map = new google.maps.Map(mapContainer, this.mapOptions);
+		this.map = new google.maps.Map(mapContainer, this.mapOptions);
 			
-			//console.log('MAP', this);
-		} catch (e) {
-		    console.log("unable to load map", e, this);
-		}
-
         try {
 
             if(this.config.enableGeocoder)
@@ -270,8 +285,7 @@ var GMAP = {
     /**
      * Find markers by attribute value
      */
-	
-    findBy : function (attr, value) { console.log('findBy', attr, value);
+    findMarkersBy : function (attr, value) { console.log('findBy', attr, value);
         if(typeof attr != "undefined" && typeof value != "undefined")
             for (i = 0; i < this.markers.length; i++) {
                 marker = this.markers[i];
@@ -349,6 +363,46 @@ var GMAP = {
         return this;
     },
 
+
+	/**
+	 * Get Mid point
+	*/
+	getMidPoint: function(point1, point2) {
+	  var lat = (point1.lat() + point2.lat()) / 2;
+	  var lng = (point1.lng() + point2.lng()) / 2;
+	  return {lat, lng};
+	},
+	
+	getMidStep7:  function (steps) {
+	  // Calcul du point milieu
+	  const midpointIndex = Math.floor(steps.length / 2);
+	  console.log('STEPS', steps.length, steps, midpointIndex)
+	  const midpoint = steps[midpointIndex].start_location;
+	  return midpoint;
+	},
+	
+	getMidDirection: function (steps) {
+	// Calcul de la distance totale du trajet
+	  let totalDistance = 0;
+	  steps.forEach(step => {
+		totalDistance += step.distance.value;
+	  });
+	  // Calcul du point milieu en fonction de la distance parcourue
+	  let distance = 0;
+	  let midpoint;
+	  let stepIndex = 0;
+	  for (let i = 0; i < steps.length; i++) {
+		distance += steps[i].distance.value;
+		if (distance >= totalDistance / 2) {
+		  //midpoint = steps[i].start_location;
+		  stepIndex = i;
+		  break;
+		}
+	  }
+	  midpoint = steps[stepIndex].start_location;
+	  return midpoint;
+	},
+
     /**
      * Tracage du chemin entre deux points
      * @params options : { origin, destination | originLat, originLng, destinationLat, destinationLng  }
@@ -375,11 +429,13 @@ var GMAP = {
                     start = options.origin;
                     end = options.destination;
                 }
+				
+				console.log('R', options.travelMode, google.maps.TravelMode, google.maps.TravelMode[options.travelMode])
 
                 var request = {
                     origin: start,
                     destination: end,
-                    travelMode: google.maps.TravelMode.DRIVING // DRIVING | BICYCLING | TRANSIT | WALKING
+                    travelMode: google.maps.TravelMode[options.travelMode] // DRIVING | BICYCLING | TRANSIT | WALKING
                 };
 
                 this.directionsService.route(request,
@@ -421,6 +477,27 @@ var GMAP = {
         return d.toFixed(2);
     },
     
+	nearbySearch: function (point, requestData) {
+		
+		var request = {
+			location: new google.maps.LatLng(lat, lng),
+			radius: '500',
+			types: ['restaurant', 'cafe']
+		};
+		
+		var service = new google.maps.places.PlacesService(map);
+		service.nearbySearch(request, function(results, status) {
+			if (status == google.maps.places.PlacesServiceStatus.OK) {
+				// Afficher les restaurants et les cafés trouvés
+				for (var i = 0; i < results.length; i++) {
+				  var place = results[i];
+				  console.log(place.name);
+				}
+			}
+		});
+		
+	},
+	
     // ############################################################# DRAWING SHAPE
     /**
 	 * Drawing Shape lib
@@ -611,16 +688,40 @@ function _checkNested(obj /*, level1, level2, ... levelN*/) {
 	return true;
 }
 
+function getLibPath(){
+	const API_KEY = localStorage.getItem('g_api_key');
+	const LANGUAGE = 'ar';
+	return `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&v=3.exp&signed_in=true&language=${LANGUAGE}&libraries=drawing?callback=_initialize`
+} 
+
 function _loadScript(src) {
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = src;
-    document.body.appendChild(script);
+    return new Promise((resolve, reject) => {
+        // Create script element and set attributes
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = src;
+        script.defer = true;
+        
+		// Append the script to the DOM
+        const el = document.getElementsByTagName('script')[0]
+        el.parentNode.insertBefore(script, el)
+
+        // Resolve the promise once the script is loaded
+        script.addEventListener('load', () => {
+            this.isLoaded = true
+            resolve(script)
+        })
+
+        // Catch any errors while loading the script
+        script.addEventListener('error', () => {
+            reject(new Error(`${this.src} failed to load.`))
+        })
+    })
 }
 
-function _loadScriptAndreInit(mapContainer, options, config){
-    googlePath = "http://maps.googleapis.com/maps/api/js?callback=_initialize" ;
-    _loadScript(GMAP.googlePath);
+function _loadScriptAndreInit(){
+    //googlePath = "http://maps.googleapis.com/maps/api/js?callback=_initialize" ;
+    _loadScript(getLibPath());
 }
 
 function _initialize(){
